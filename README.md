@@ -1,45 +1,43 @@
-https://share.streamlit.io/usuario/repo (Reemplazar con la URL final de Streamlit Cloud)
+https://tb4-visualizacion-peru.streamlit.app/
 
-# Trabajo 4 (TB4) - Data Visualization
-Este repositorio contiene la solución completa para el Trabajo 4 (TB4) de Data Visualization. Se ha implementado un dashboard interactivo utilizando Streamlit y un Jupyter Notebook como bitácora de desarrollo y registro de compilación de datos.
+# Trabajo 4 (TB4) - Data Visualization (S12)
 
-## Estructura del Repositorio
-- `app.py`: Archivo principal del dashboard interactivo en Streamlit.
-- `desarrollo.ipynb`: Jupyter Notebook que contiene la bitácora de desarrollo, fusión de datos, cálculos matemáticos y gráficos de prueba.
-- `requirements.txt`: Dependencias exactas de Python para reproducir el proyecto.
-- `paleta.md`: Documentación de la validación de accesibilidad colorblind-safe de la paleta de colores.
-- `data/`:
-  - `merge.py`: Script para automatizar la descarga y fusión de los datasets (OWID + Kaggle). Generado automáticamente desde el notebook.
-  - `merged_dataset.csv`: Dataset final unificado (países + agregados regionales).
+Este proyecto consiste en un dashboard interactivo desarrollado en Streamlit y un Jupyter Notebook de desarrollo que analizan la evolución de la transición energética global, regional y la posición estratégica de Perú (2000-2020) bajo los principios de **Storytelling with Data**.
 
-## Ejecución Local
+## Estructura del Proyecto
+
+El proyecto está ubicado dentro de la carpeta `project/` y contiene los siguientes archivos:
+- `create_notebook.py`: Script de Python para generar de forma interactiva y programática el cuaderno `desarrollo.ipynb`.
+- `desarrollo.ipynb`: Bitácora de desarrollo y registro interactivo de la limpieza de datos, fusión de datasets y prototipado.
+- `app.py`: Aplicación y dashboard interactivo de Streamlit que presenta las visualizaciones de las preguntas Q1 a Q9, además de la sección de defensa de diseño (Q10).
+- `paleta.md`: Documentación exigida sobre la paleta de colores adoptada y su validación de accesibilidad colorblind-safe.
+- `requirements.txt`: Archivo de dependencias del proyecto.
+- `data/`: Directorio que contiene el dataset consolidado (`merged_dataset.csv`) y el script robusto de fusión (`merge.py`).
+
+## Instrucciones de Ejecución Local
 
 ### Prerrequisitos
-Tener instalado Python 3.12 y pip.
 
-### Instrucciones
-1. Clonar el repositorio:
-   ```bash
-   git clone <URL_DEL_REPOSITORIO>
-   cd <NOMBRE_DEL_REPOSITORIO>
-   ```
+Asegúrate de tener instalada una versión moderna de Python (por ejemplo, Python 3.12).
 
-2. Instalar dependencias:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Instalación de Dependencias
 
-3. (Opcional) Ejecutar el procesamiento de datos. Si no cuentas con el dataset unificado, ejecuta el script de fusión:
-   ```bash
-   python data/merge.py
-   ```
+Ejecuta el siguiente comando para instalar las librerías necesarias:
+```bash
+pip install -r project/requirements.txt
+```
 
-4. Correr la aplicación de Streamlit:
-   ```bash
-   streamlit run app.py
-   ```
+### Ejecución del Notebook de Desarrollo
 
-## Decisiones de Diseño (Storytelling con Datos)
-- **Claridad Visual:** Todos los ejes Y de barras parten estrictamente en 0. Se usan barras horizontales para países y deltas para evitar etiquetas en diagonal de difícil lectura.
-- **Leyendas Integradas:** Se omiten cajas flotantes y se colocan anotaciones de texto directamente al final de las trayectorias de las líneas.
-- **Regla del 60-30-10:** Reducción de carga cognitiva con fondos e interfaces claras (60%), contexto en grises apagados (30%), y destaque de Perú en naranja de alto contraste (10%).
+Si deseas regenerar el dataset unificado y compilar el notebook de desarrollo, ejecuta:
+```bash
+python project/create_notebook.py
+python -m nbconvert --to notebook --execute --inplace project/desarrollo.ipynb
+```
+
+### Ejecución del Dashboard de Streamlit
+
+Para iniciar el servidor de Streamlit y visualizar el dashboard interactivo de forma local, ejecuta:
+```bash
+streamlit run project/app.py
+```
