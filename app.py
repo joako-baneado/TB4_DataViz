@@ -105,6 +105,30 @@ section = st.sidebar.radio(
     ]
 )
 
+st.sidebar.markdown("---")
+st.sidebar.markdown("<h3 style='font-weight:600; color:#1E293B;'>Filtros Globales</h3>", unsafe_allow_html=True)
+
+# 1. Slider (Año) - affects Q3, Q4, Q8
+year_sel = st.sidebar.slider(
+    "Selecciona el año de análisis:",
+    min_value=2000,
+    max_value=2018,
+    value=2018,
+    help="Este control temporal actualiza dinámicamente los gráficos de Riqueza vs Renovables (Q3), Pobreza Energética (Q4) y Comparativa de Perú (Q8) en simultáneo."
+)
+
+# 2. Multiselect (Región/Continente) - affects Q3, Q4
+available_regions = ['Africa', 'Asia', 'Europe', 'North America', 'South America', 'Oceania']
+regions_selected = st.sidebar.multiselect(
+    "Filtrar por Región (Continente):",
+    options=available_regions,
+    default=available_regions,
+    help="Este control múltiple actualiza los gráficos de dispersión de Riqueza vs Renovables (Q3) y Pobreza Energética (Q4) en simultáneo."
+)
+
+if not regions_selected:
+    st.sidebar.warning("¡Selecciona al menos una región para ver los datos filtrados!")
+
 # Header Section
 st.markdown("<div class='dashboard-title'>Trabajo 4 (TB4) - Visualización de Datos</div>", unsafe_allow_html=True)
 st.markdown("<div class='dashboard-subtitle'>Análisis comparativo de la transición energética y la posición estratégica de Perú (2000-2020)</div>", unsafe_allow_html=True)
@@ -143,6 +167,7 @@ if section == "Bloque A: Panorama Global":
         x='delta',
         y='country',
         orientation='h',
+        custom_data=['renewable_share_of_total_energy_2000', 'renewable_share_of_total_energy_2019'],
         labels={'delta': 'Puntos Porcentuales Ganados (2000-2019)', 'country': 'País'},
         title='<b>Dinamarca lideró la transición ganando más de 26 puntos porcentuales de energía renovable (2000-2019)</b>'
     )
@@ -150,7 +175,11 @@ if section == "Bloque A: Panorama Global":
         marker_color=colors,
         texttemplate='%{x:.1f}%',
         textposition='outside',
-        cliponaxis=False
+        cliponaxis=False,
+        hovertemplate="<b>%{y}</b><br>" +
+                      "Puntos ganados: +%{x:.1f}%<br>" +
+                      "Participación en 2000: %{customdata[0]:.1f}%<br>" +
+                      "Participación en 2019: %{customdata[1]:.1f}%<extra></extra>"
     )
     fig1.update_layout(
         plot_bgcolor='white',
@@ -196,13 +225,22 @@ if section == "Bloque A: Panorama Global":
     
     for r in regions:
         data = df_reg[df_reg['country'] == r].sort_values(by='year')
+        pop_millions = data['population'] / 1e6
+        fossil_share = data['fossil_share_elec'].fillna(0)
+        
         fig2.add_trace(go.Scatter(
             x=data['year'],
             y=data['carbon_intensity_elec'],
             mode='lines+markers',
             name=r,
             line=dict(color=colors_map[r], width=3 if r in ['Europe', 'Asia'] else 1.5),
-            marker=dict(size=5 if r in ['Europe', 'Asia'] else 3)
+            marker=dict(size=5 if r in ['Europe', 'Asia'] else 3),
+            customdata=np.stack((fossil_share, pop_millions), axis=-1),
+            hovertemplate="<b>Región: " + r + "</b><br>" +
+                          "Año: %{x}<br>" +
+                          "Intensidad de Carbono: %{y:.1f} gCO₂/kWh<br>" +
+                          "Participación Fósil en Elec: %{customdata[0]:.1f}%<br>" +
+                          "Población: %{customdata[1]:.1f}M<extra></extra>"
         ))
         
         # Add labels directly at the end of the line
@@ -239,38 +277,51 @@ if section == "Bloque A: Panorama Global":
     </div>
     """, unsafe_allow_html=True)
     
-    year_sel = 2018
+    # Filter by selected regions and selected year
     df_y = df_merged[(df_merged['year'] == year_sel) & (~df_merged['is_region']) & df_merged['region'].notna()].copy()
+    if regions_selected:
+        df_y = df_y[df_y['region'].isin(regions_selected)]
     df_y = df_y.dropna(subset=['gdp_per_capita', 'renewable_share_of_total_energy'])
     
-    fig3 = px.scatter(
-        df_y,
-        x='gdp_per_capita',
-        y='renewable_share_of_total_energy',
-        size='population',
-        color='region',
-        hover_name='country',
-        log_x=True,
-        color_discrete_sequence=px.colors.qualitative.Set2,
-        labels={
-            'gdp_per_capita': 'PIB per Cápita (USD, Escala Logarítmica)',
-            'renewable_share_of_total_energy': 'Participación Renovable (%)',
-            'region': 'Región'
-        },
-        title=f'<b>La riqueza no garantiza sostenibilidad: no hay una relación lineal entre el PIB per cápita y el % renovable ({year_sel})</b>'
-    )
-    fig3.update_layout(
-        plot_bgcolor='white',
-        title_x=0.0,
-        title_font_size=14,
-        xaxis=dict(
-            showgrid=True, gridcolor='#E0E0E0',
-            tickvals=[200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
-            ticktext=['$200', '$500', '$1,000', '$2,000', '$5,000', '$10,000', '$20,000', '$50,000', '$100,000']
-        ),
-        yaxis=dict(showgrid=True, gridcolor='#E0E0E0')
-    )
-    st.plotly_chart(fig3, use_container_width=True)
+    if df_y.empty:
+        st.warning("No hay datos disponibles para la combinación de filtros seleccionada en Q3.")
+    else:
+        fig3 = px.scatter(
+            df_y,
+            x='gdp_per_capita',
+            y='renewable_share_of_total_energy',
+            size='population',
+            color='region',
+            hover_name='country',
+            log_x=True,
+            color_discrete_sequence=px.colors.qualitative.Set2,
+            custom_data=['population', 'energy_per_capita'],
+            labels={
+                'gdp_per_capita': 'PIB per Cápita (USD, Escala Logarítmica)',
+                'renewable_share_of_total_energy': 'Participación Renovable (%)',
+                'region': 'Región'
+            },
+            title=f'<b>La riqueza no garantiza sostenibilidad: no hay una relación lineal entre el PIB per cápita y el % renovable ({year_sel})</b>'
+        )
+        fig3.update_traces(
+            hovertemplate="<b>%{hovertext}</b><br>" +
+                          "PIB per Cápita: $%{x:,.0f}<br>" +
+                          "Participación Renovable: %{y:.1f}%<br>" +
+                          "Población: %{customdata[0]:,.0f}<br>" +
+                          "Consumo de Energía per Cápita: %{customdata[1]:,.0f} kWh<extra></extra>"
+        )
+        fig3.update_layout(
+            plot_bgcolor='white',
+            title_x=0.0,
+            title_font_size=14,
+            xaxis=dict(
+                showgrid=True, gridcolor='#E0E0E0',
+                tickvals=[200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
+                ticktext=['$200', '$500', '$1,000', '$2,000', '$5,000', '$10,000', '$20,000', '$50,000', '$100,000']
+            ),
+            yaxis=dict(showgrid=True, gridcolor='#E0E0E0')
+        )
+        st.plotly_chart(fig3, use_container_width=True)
 
 # ==============================================================================
 # SECTION B: PATTERNS AND COMPARISONS
@@ -286,45 +337,57 @@ elif section == "Bloque B: Patrones y Comparaciones":
     </div>
     """, unsafe_allow_html=True)
     
-    year_sel = 2018
     df_q4 = df_merged[(df_merged['year'] == year_sel) & (~df_merged['is_region']) & df_merged['region'].notna()].copy()
+    if regions_selected:
+        df_q4 = df_q4[df_q4['region'].isin(regions_selected)]
     df_q4 = df_q4.dropna(subset=['access_to_electricity', 'fossil_share_elec'])
     
-    df_q4['status'] = np.where(
-        (df_q4['access_to_electricity'] < 50) & (df_q4['fossil_share_elec'] > 50),
-        'Crítico (Acceso < 50%, Fósil > 50%)',
-        'Otro'
-    )
-    
-    fig4 = px.scatter(
-        df_q4,
-        x='access_to_electricity',
-        y='fossil_share_elec',
-        color='status',
-        hover_name='country',
-        size_max=12,
-        color_discrete_map={
-            'Crítico (Acceso < 50%, Fósil > 50%)': '#D32F2F',
-            'Otro': '#CFD8DC'
-        },
-        labels={
-            'access_to_electricity': 'Acceso a Electricidad (% de Población)',
-            'fossil_share_elec': 'Dependencia de Fósiles en el Mix Eléctrico (%)',
-            'status': 'Estado'
-        },
-        title=f'<b>Cuadrante de Vulnerabilidad Extrema: Países con acceso eléctrico inferior al 50% y alta dependencia fósil ({year_sel})</b>'
-    )
-    fig4.add_vline(x=50, line_dash='dash', line_color='gray', annotation_text='Umbral Acceso (50%)', annotation_position='bottom right')
-    fig4.add_hline(y=50, line_dash='dash', line_color='gray', annotation_text='Umbral Fósil (50%)', annotation_position='top left')
-    
-    fig4.update_layout(
-        plot_bgcolor='white',
-        title_x=0.0,
-        title_font_size=14,
-        xaxis=dict(showgrid=True, gridcolor='#E0E0E0', range=[0, 105]),
-        yaxis=dict(showgrid=True, gridcolor='#E0E0E0', range=[0, 105])
-    )
-    st.plotly_chart(fig4, use_container_width=True)
+    if df_q4.empty:
+        st.warning("No hay datos disponibles para la combinación de filtros seleccionada en Q4.")
+    else:
+        df_q4['status'] = np.where(
+            (df_q4['access_to_electricity'] < 50) & (df_q4['fossil_share_elec'] > 50),
+            'Crítico (Acceso < 50%, Fósil > 50%)',
+            'Otro'
+        )
+        
+        fig4 = px.scatter(
+            df_q4,
+            x='access_to_electricity',
+            y='fossil_share_elec',
+            color='status',
+            hover_name='country',
+            size_max=12,
+            color_discrete_map={
+                'Crítico (Acceso < 50%, Fósil > 50%)': '#D32F2F',
+                'Otro': '#CFD8DC'
+            },
+            custom_data=['gdp_per_capita', 'population'],
+            labels={
+                'access_to_electricity': 'Acceso a Electricidad (% de Población)',
+                'fossil_share_elec': 'Dependencia de Fósiles en el Mix Eléctrico (%)',
+                'status': 'Estado'
+            },
+            title=f'<b>Cuadrante de Vulnerabilidad Extrema: Países con acceso eléctrico inferior al 50% y alta dependencia fósil ({year_sel})</b>'
+        )
+        fig4.update_traces(
+            hovertemplate="<b>%{hovertext}</b><br>" +
+                          "Acceso a Electricidad: %{x:.1f}%<br>" +
+                          "Dependencia Fósil: %{y:.1f}%<br>" +
+                          "PIB per Cápita: $%{customdata[0]:,.0f}<br>" +
+                          "Población: %{customdata[1]:,.0f}<extra></extra>"
+        )
+        fig4.add_vline(x=50, line_dash='dash', line_color='gray', annotation_text='Umbral Acceso (50%)', annotation_position='bottom right')
+        fig4.add_hline(y=50, line_dash='dash', line_color='gray', annotation_text='Umbral Fósil (50%)', annotation_position='top left')
+        
+        fig4.update_layout(
+            plot_bgcolor='white',
+            title_x=0.0,
+            title_font_size=14,
+            xaxis=dict(showgrid=True, gridcolor='#E0E0E0', range=[0, 105]),
+            yaxis=dict(showgrid=True, gridcolor='#E0E0E0', range=[0, 105])
+        )
+        st.plotly_chart(fig4, use_container_width=True)
     st.caption("**Nota de mejora:** Se utiliza el indicador `fossil_share_elec` (fósiles en electricidad) en lugar de `fossil_share_energy` (energía primaria) debido a que este último contiene valores nulos para todas las naciones con acceso eléctrico inferior al 50%, lo que impedía visualizar países en el cuadrante crítico.")
     st.markdown("---")
     
@@ -356,17 +419,29 @@ elif section == "Bloque B: Patrones y Comparaciones":
     fig5 = go.Figure()
     for country in df_pivot_rank.index:
         ranks = df_pivot_rank.loc[country]
+        country_data = df_cohort[df_cohort['country'] == country].sort_values(by='year')
+        x_vals = country_data['year'].tolist()
+        y_vals = country_data['rank'].tolist()
+        energy_vals = country_data['energy_per_capita'].tolist()
+        gdp_vals = country_data['gdp_per_capita'].tolist()
+        
         is_highlight = country in ['Iceland', 'Singapore', 'Qatar']
         color = '#D32F2F' if country == 'Iceland' else ('#FF9800' if country == 'Singapore' else '#B0BEC5')
         width = 3.5 if is_highlight else 1.5
         
         fig5.add_trace(go.Scatter(
-            x=years,
-            y=ranks,
+            x=x_vals,
+            y=y_vals,
             mode='lines+markers',
             name=country,
             line=dict(color=color, width=width),
-            marker=dict(size=8 if is_highlight else 5)
+            marker=dict(size=8 if is_highlight else 5),
+            customdata=np.stack((energy_vals, gdp_vals), axis=-1),
+            hovertemplate="<b>País: " + country + "</b><br>" +
+                          "Año: %{x}<br>" +
+                          "Puesto en Cohorte: %{y}<br>" +
+                          "Consumo per Cápita: %{customdata[0]:,.0f} kWh<br>" +
+                          "PIB per Cápita: $%{customdata[1]:,.0f}<extra></extra>"
         ))
         # Text annotation on the left
         fig5.add_annotation(
@@ -442,6 +517,9 @@ elif section == "Bloque B: Patrones y Comparaciones":
         
         # Dynamic title based on country
         country_display = "Perú" if country_sel == "Peru" else country_sel
+        total_gen = mix_df['Generación (TWh)'].sum()
+        mix_df['Total Generación (TWh)'] = total_gen
+        
         fig6 = px.bar(
             mix_df,
             x='Participación (%)',
@@ -449,11 +527,19 @@ elif section == "Bloque B: Patrones y Comparaciones":
             orientation='h',
             color='Fuente',
             color_discrete_sequence=colors_sources,
+            custom_data=['Generación (TWh)', 'Total Generación (TWh)'],
             title=f'<b>Matriz de {country_display} en {year_max}: Pico renovable liderado por Hidroelectricidad</b>',
             labels={'Participación (%)': 'Participación en el Mix Eléctrico (%)'}
         )
         # We change textposition='auto' to avoid cut-off labels for thin bars (e.g. Coal = 1.6%)
-        fig6.update_traces(texttemplate='%{x:.1f}%', textposition='auto')
+        fig6.update_traces(
+            hovertemplate="<b>Fuente: %{y}</b><br>" +
+                          "Participación: %{x:.1f}%<br>" +
+                          "Generación Absoluta: %{customdata[0]:.2f} TWh<br>" +
+                          "Generación Total de la Matriz: %{customdata[1]:.2f} TWh<extra></extra>",
+            texttemplate='%{x:.1f}%',
+            textposition='auto'
+        )
         fig6.update_layout(
             plot_bgcolor='white',
             title_x=0.0,
@@ -497,10 +583,19 @@ elif section == "Bloque B: Patrones y Comparaciones":
         x='delta',
         y='country',
         orientation='h',
+        custom_data=['carbon_intensity_elec_2000', 'carbon_intensity_elec_2020'],
         labels={'delta': 'Cambio en Intensidad de Carbono (gCO₂/kWh)', 'country': 'País'},
         title='<b>Perú registró el mayor incremento en intensidad de carbono de la región debido a la incorporación de gas natural (2000-2020)</b>'
     )
-    fig7.update_traces(marker_color=colors_divergent, texttemplate='%{x:.0f} g', textposition='outside')
+    fig7.update_traces(
+        marker_color=colors_divergent,
+        texttemplate='%{x:.0f} g',
+        textposition='outside',
+        hovertemplate="<b>%{y}</b><br>" +
+                      "Cambio en Intensidad: %{x:.1f} gCO₂/kWh<br>" +
+                      "Intensidad en 2000: %{customdata[0]:.1f} gCO₂/kWh<br>" +
+                      "Intensidad en 2020: %{customdata[1]:.1f} gCO₂/kWh<extra></extra>"
+    )
     fig7.update_layout(
         plot_bgcolor='white',
         title_x=0.0,
@@ -524,7 +619,6 @@ elif section == "Bloque C: Posición de Perú":
     </div>
     """, unsafe_allow_html=True)
     
-    year_sel = 2018
     df_la_y = df_merged[(df_merged['country'].isin(latin_america)) & (df_merged['year'] == year_sel) & (~df_merged['is_region'])].copy()
     mean_ren = df_la_y['renewable_share_of_total_energy'].mean()
     mean_acc = df_la_y['access_to_electricity'].mean()
@@ -551,7 +645,12 @@ elif section == "Bloque C: Posición de Perú":
         name='Perú',
         marker_color='#FF6F00',
         text=compare_df['Perú'].apply(lambda x: f'{x:.1f}'),
-        textposition='outside'
+        textposition='outside',
+        hovertemplate=[
+            "<b>Métrica: Participación Renovable</b><br>Valor Perú: %{y:.1f}%<br>Brecha vs Promedio AL: " + f"{peru_ren - mean_ren:.1f}%<extra></extra>",
+            "<b>Métrica: Acceso a Electricidad</b><br>Valor Perú: %{y:.1f}%<br>Brecha vs Promedio AL: " + f"{peru_acc - mean_acc:.1f}%<extra></extra>",
+            "<b>Métrica: Intensidad Energética</b><br>Valor Perú: %{y:.2f} MJ/GDP<br>Brecha vs Promedio AL: " + f"{peru_int - mean_int:.2f} MJ/GDP<extra></extra>"
+        ]
     ))
     fig8.add_trace(go.Bar(
         x=compare_df['Métrica'],
@@ -559,7 +658,12 @@ elif section == "Bloque C: Posición de Perú":
         name='Promedio AL',
         marker_color='#78909C',
         text=compare_df['Promedio AL'].apply(lambda x: f'{x:.1f}'),
-        textposition='outside'
+        textposition='outside',
+        hovertemplate=[
+            "<b>Métrica: Participación Renovable</b><br>Promedio AL: %{y:.1f}%<br>Desempeño de la Región<extra></extra>",
+            "<b>Métrica: Acceso a Electricidad</b><br>Promedio AL: %{y:.1f}%<br>Desempeño de la Región<extra></extra>",
+            "<b>Métrica: Intensidad Energética</b><br>Promedio AL: %{y:.2f} MJ/GDP<br>Desempeño de la Región<extra></extra>"
+        ]
     ))
     
     fig8.update_layout(
@@ -604,7 +708,13 @@ elif section == "Bloque C: Posición de Perú":
             mode='lines+markers',
             name=c,
             line=dict(color=colors_q9[c], width=3.5 if c == 'Peru' else 1.5),
-            marker=dict(size=6 if c == 'Peru' else 4)
+            marker=dict(size=6 if c == 'Peru' else 4),
+            customdata=np.stack((data['gdp_per_capita'].fillna(0), data['population'].fillna(0) / 1e6), axis=-1),
+            hovertemplate="<b>País: " + c + "</b><br>" +
+                          "Año: %{x}<br>" +
+                          "Consumo per Cápita: %{y:,.0f} kWh<br>" +
+                          "PIB per Cápita: $%{customdata[0]:,.0f}<br>" +
+                          "Población: %{customdata[1]:.1f}M<extra></extra>"
         ))
         
         last_row = data.iloc[-1]

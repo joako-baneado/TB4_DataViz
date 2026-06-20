@@ -1,4 +1,4 @@
-https://tb4-visualizacion-peru.streamlit.app/
+https://tb4dataviz-hfam9wvdjyckrxjpscbh3c.streamlit.app/
 
 # Trabajo 4 (TB4) - Data Visualization (S12)
 
@@ -6,12 +6,11 @@ Este proyecto consiste en un dashboard interactivo desarrollado en Streamlit y u
 
 ## Estructura del Proyecto
 
-El proyecto está ubicado dentro de la carpeta `project/` y contiene los siguientes archivos:
-- `create_notebook.py`: Script de Python para generar de forma interactiva y programática el cuaderno `desarrollo.ipynb`.
+El proyecto está ubicado en la raíz del repositorio y contiene los siguientes archivos:
 - `desarrollo.ipynb`: Bitácora de desarrollo y registro interactivo de la limpieza de datos, fusión de datasets y prototipado.
 - `app.py`: Aplicación y dashboard interactivo de Streamlit que presenta las visualizaciones de las preguntas Q1 a Q9, además de la sección de defensa de diseño (Q10).
 - `paleta.md`: Documentación exigida sobre la paleta de colores adoptada y su validación de accesibilidad colorblind-safe.
-- `requirements.txt`: Archivo de dependencias del proyecto.
+- `requirements.txt`: Archivo de dependencias del proyecto con versiones exactas.
 - `data/`: Directorio que contiene el dataset consolidado (`merged_dataset.csv`) y el script robusto de fusión (`merge.py`).
 
 ## Instrucciones de Ejecución Local
@@ -24,20 +23,19 @@ Asegúrate de tener instalada una versión moderna de Python (por ejemplo, Pytho
 
 Ejecuta el siguiente comando para instalar las librerías necesarias:
 ```bash
-pip install -r project/requirements.txt
+pip install -r requirements.txt
 ```
 
 ### Ejecución del Notebook de Desarrollo
 
 Si deseas regenerar el dataset unificado y compilar el notebook de desarrollo, ejecuta:
 ```bash
-python project/create_notebook.py
-python -m nbconvert --to notebook --execute --inplace project/desarrollo.ipynb
+python -m nbconvert --to notebook --execute --inplace desarrollo.ipynb
 ```
 
 ### Ejecución del Dashboard de Streamlit
 
 Para iniciar el servidor de Streamlit y visualizar el dashboard interactivo de forma local, ejecuta:
 ```bash
-streamlit run project/app.py
+streamlit run app.py
 ```
