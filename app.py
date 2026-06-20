@@ -775,5 +775,3 @@ else:
         * **Regla:** Mantener las pendientes de trayectoria cercanas a los **45 grados**.
         * **Razón:** Estirar excesivamente el eje horizontal aplanaría artificialmente el crecimiento del consumo per cápita en Perú. Estirar el eje vertical exageraría variaciones de carbono de corto plazo. La relación de aspecto 4:3 en contenedores resguarda la veracidad matemática.
         """)
-        
-    st.success("Este marco teórico provee todas las respuestas necesarias para la evaluación verbal de la Pregunta 10 (2 puntos del Bloque D).")
