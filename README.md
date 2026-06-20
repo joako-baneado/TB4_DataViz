@@ -8,7 +8,7 @@ Este proyecto consiste en un dashboard interactivo desarrollado en Streamlit y u
 - Joaquin Basas
 - Joaquin Alvarado
 - Alejandro Colfer
-- Nataly Anaya
+- Nathaly Anaya
 - Mark Esquivel
 
 ## Estructura del Proyecto
