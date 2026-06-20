@@ -4,6 +4,13 @@ https://tb4dataviz-hfam9wvdjyckrxjpscbh3c.streamlit.app/
 
 Este proyecto consiste en un dashboard interactivo desarrollado en Streamlit y un Jupyter Notebook de desarrollo que analizan la evolución de la transición energética global, regional y la posición estratégica de Perú (2000-2020) bajo los principios de **Storytelling with Data**.
 
+## Integrantes
+- Joaquin Basas
+- Joaquin Alvarado
+- Alejandro Colfer
+- Nataly Anaya
+- Mark Esquivel
+
 ## Estructura del Proyecto
 
 El proyecto está ubicado en la raíz del repositorio y contiene los siguientes archivos:
